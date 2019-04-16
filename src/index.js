@@ -55,6 +55,7 @@ class MiniSocket extends Base {
     this.config = {};
     this.readyState = 0;
     this.retryTimes = 0;
+    this.isRetry = false;
   }
 
   initDefaultOpts() {
@@ -103,6 +104,10 @@ class MiniSocket extends Base {
   }
 
   reConnect({ data = {} } = {}) {
+    if (this.isRetry) {
+      return this;
+    }
+    this.isRetry = true;
     if (this.retryTimes >= this.config.retryTimes) {
       this.emit('retryTimeout', null, {});
       this.retryTimes = 0;
@@ -111,11 +116,14 @@ class MiniSocket extends Base {
       this.options.connectType = 're';
       this.once(evtNames['Mini:Reconnect'], () => {
         this.retryTimes = 0;
+        this.isRetry = false;
         this.options.connectType = '';
         this.emit('reconnect', null, data);
       });
-      this.connectSocket(this.options);
-      this.initMiniEvt();
+      setTimeout(() => {
+        this.connectSocket(this.options);
+        this.initMiniEvt();
+      }, 1500);
     }
     return this;
   }
